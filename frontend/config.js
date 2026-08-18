@@ -8,9 +8,18 @@ const SEPOLIA_CHAIN_ID       = "0xaa36a7";        // 11155111
 const SEPOLIA_RPC_URL = "https://eth-sepolia.g.alchemy.com/v2/alch_dyXq1JH7kQW7aCHxdqBSk";// Paste your deployed contract address here after running:
 //   npx hardhat run scripts/deploy.js --network sepolia
 const SEPOLIA_CONTRACT_ADDRESS = "0x20c902EBF1A48A66265314C234E861ECFf98860b";
+
+// ─── Polygon PoS Mainnet ──────────────────────────────────────────────────────
+const POLYGON_CHAIN_ID       = "0x89";            // 137
+const POLYGON_RPC_URL        = "https://polygon-rpc.com";
+// Paste your deployed contract address here after running:
+//   npx hardhat run scripts/deploy.js --network polygon
+const POLYGON_CONTRACT_ADDRESS = "";
+
 // ─── Active Contract Address (resolved by script.js based on network) ─────────
 // This is kept for backward compatibility; script.js will override it at runtime.
 const contractAddress = HARDHAT_CONTRACT_ADDRESS;
+
 
 
 const CONTRACT_ABI = [

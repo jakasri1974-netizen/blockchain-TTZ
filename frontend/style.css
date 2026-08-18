@@ -218,3 +218,21 @@ input{
     border:1px solid rgba(167,139,250,.3);
 }
 
+.net-btn--polygon-active{
+    background:#8247e5;
+    color:#fff;
+    border-color:#a855f7;
+    box-shadow:0 0 8px rgba(168,85,247,.35);
+}
+
+.net-btn--polygon-active:hover{
+    background:#8247e5;
+}
+
+.network-badge--polygon{
+    background:rgba(168,85,247,.15);
+    color:#c084fc;
+    border:1px solid rgba(168,85,247,.3);
+}
+
+

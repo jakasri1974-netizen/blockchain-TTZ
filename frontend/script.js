@@ -10,13 +10,14 @@ const tokenSymbolEl   = document.getElementById("tokenSymbol");
 const networkBadge    = document.getElementById("networkBadge");
 const btnHardhat      = document.getElementById("networkHardhat");
 const btnSepolia      = document.getElementById("networkSepolia");
+const btnPolygon      = document.getElementById("networkPolygon");
 
 let provider;
 let signer;
 let contract;
 
 // ─── Active Network State ─────────────────────────────────────────────────────
-// "hardhat" | "sepolia"  — driven by the toggle buttons in the header
+// "hardhat" | "sepolia" | "polygon"  — driven by the toggle buttons in the header
 let activeNetwork = "hardhat";
 
 const transactionPoolApi = `${window.location.origin}/api`;
@@ -30,6 +31,16 @@ function getNetworkConfig() {
             contractAddress: SEPOLIA_CONTRACT_ADDRESS,
             explorerUrl:     "https://sepolia.etherscan.io",
             nativeCurrency:  { name: "Ether", symbol: "ETH", decimals: 18 },
+        };
+    }
+    if (activeNetwork === "polygon") {
+        return {
+            chainId:         POLYGON_CHAIN_ID,
+            chainName:       "Polygon Mainnet",
+            rpcUrl:          POLYGON_RPC_URL,
+            contractAddress: POLYGON_CONTRACT_ADDRESS,
+            explorerUrl:     "https://polygonscan.com",
+            nativeCurrency:  { name: "POL", symbol: "POL", decimals: 18 },
         };
     }
     return {
@@ -48,35 +59,61 @@ function syncNetworkUI() {
         networkBadge.textContent = "● Sepolia";
         networkBadge.className   = "network-badge network-badge--sepolia";
         btnSepolia.className  = "net-btn net-btn--sepolia-active";
-        btnHardhat.className  = "net-btn";
+        if (btnHardhat) btnHardhat.className = "net-btn";
+        if (btnPolygon) btnPolygon.className = "net-btn";
+    } else if (activeNetwork === "polygon") {
+        networkBadge.textContent = "● Polygon";
+        networkBadge.className   = "network-badge network-badge--polygon";
+        if (btnPolygon) btnPolygon.className = "net-btn net-btn--polygon-active";
+        if (btnHardhat) btnHardhat.className = "net-btn";
+        if (btnSepolia) btnSepolia.className = "net-btn";
     } else {
         networkBadge.textContent = "● Hardhat";
         networkBadge.className   = "network-badge network-badge--hardhat";
-        btnHardhat.className  = "net-btn net-btn--active";
-        btnSepolia.className  = "net-btn";
+        if (btnHardhat) btnHardhat.className = "net-btn net-btn--active";
+        if (btnSepolia) btnSepolia.className = "net-btn";
+        if (btnPolygon) btnPolygon.className = "net-btn";
     }
 }
 
 // ─── Network Toggle Buttons ───────────────────────────────────────────────────
-btnHardhat.addEventListener("click", async () => {
-    if (activeNetwork === "hardhat") return;
-    activeNetwork = "hardhat";
-    syncNetworkUI();
-    resetWalletState();
-    await loadTokenDetails();
-});
+if (btnHardhat) {
+    btnHardhat.addEventListener("click", async () => {
+        if (activeNetwork === "hardhat") return;
+        activeNetwork = "hardhat";
+        syncNetworkUI();
+        resetWalletState();
+        await loadTokenDetails();
+    });
+}
 
-btnSepolia.addEventListener("click", async () => {
-    if (activeNetwork === "sepolia") return;
-    if (!SEPOLIA_CONTRACT_ADDRESS) {
-        alert("Sepolia contract not deployed yet.\n\nRun:\n  npx hardhat run scripts/deploy.js --network sepolia\n\nThen paste the address into frontend/config.js → SEPOLIA_CONTRACT_ADDRESS");
-        return;
-    }
-    activeNetwork = "sepolia";
-    syncNetworkUI();
-    resetWalletState();
-    await loadTokenDetails();
-});
+if (btnSepolia) {
+    btnSepolia.addEventListener("click", async () => {
+        if (activeNetwork === "sepolia") return;
+        if (!SEPOLIA_CONTRACT_ADDRESS) {
+            alert("Sepolia contract not deployed yet.\n\nRun:\n  npx hardhat run scripts/deploy.js --network sepolia\n\nThen paste the address into frontend/config.js → SEPOLIA_CONTRACT_ADDRESS");
+            return;
+        }
+        activeNetwork = "sepolia";
+        syncNetworkUI();
+        resetWalletState();
+        await loadTokenDetails();
+    });
+}
+
+if (btnPolygon) {
+    btnPolygon.addEventListener("click", async () => {
+        if (activeNetwork === "polygon") return;
+        if (!POLYGON_CONTRACT_ADDRESS) {
+            alert("Polygon Mainnet contract not deployed yet.\n\nRun:\n  npx hardhat run scripts/deploy.js --network polygon\n\nThen paste the address into frontend/config.js → POLYGON_CONTRACT_ADDRESS");
+            return;
+        }
+        activeNetwork = "polygon";
+        syncNetworkUI();
+        resetWalletState();
+        await loadTokenDetails();
+    });
+}
 
 function resetWalletState() {
     provider = null;
@@ -209,9 +246,13 @@ async function connectWallet() {
 
     const cfg = getNetworkConfig();
 
-    // Validate Sepolia contract address before trying to connect
+    // Validate contract address before trying to connect
     if (activeNetwork === "sepolia" && !SEPOLIA_CONTRACT_ADDRESS) {
         alert("Sepolia contract not deployed yet.\n\nRun:\n  npx hardhat run scripts/deploy.js --network sepolia\n\nThen paste the address into frontend/config.js → SEPOLIA_CONTRACT_ADDRESS");
+        return;
+    }
+    if (activeNetwork === "polygon" && !POLYGON_CONTRACT_ADDRESS) {
+        alert("Polygon Mainnet contract not deployed yet.\n\nRun:\n  npx hardhat run scripts/deploy.js --network polygon\n\nThen paste the address into frontend/config.js → POLYGON_CONTRACT_ADDRESS");
         return;
     }
 
@@ -231,7 +272,7 @@ async function connectWallet() {
         signer   = provider.getSigner();
 
         const network = await provider.getNetwork();
-        const expectedChainId = activeNetwork === "sepolia" ? 11155111 : 31337;
+        const expectedChainId = parseInt(cfg.chainId, 16);
         if (network.chainId !== expectedChainId) {
             throw new Error(`Wrong chain. Expected ${expectedChainId}, got ${network.chainId}`);
         }
@@ -245,8 +286,12 @@ async function connectWallet() {
         contract = new ethers.Contract(cfg.contractAddress, tokenABI, signer);
         console.log("Contract connected:", contract.address);
 
+        let activeNetLabel = "Hardhat";
+        if (activeNetwork === "sepolia") activeNetLabel = "Sepolia";
+        if (activeNetwork === "polygon") activeNetLabel = "Polygon";
+
         walletAddress.innerText = address;
-        connectBtn.innerText    = `Connected ✅ (${activeNetwork === "sepolia" ? "Sepolia" : "Hardhat"})`;
+        connectBtn.innerText    = `Connected ✅ (${activeNetLabel})`;
 
         await updateBalance(address);
         await loadTokenDetails();
